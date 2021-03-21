@@ -9,7 +9,7 @@ Autenticação JWT, customização swagger
 - [Build](https://github.com/isaiasnas/api-core5-jwt)
 
 
-[documentação](https://github.com/isaiasnas/api-core5-jwt/blob/master/README.md)
+[documentação](https://github.com/isaiasnas/api-core5-jwt/blob/main/README.md)
 
 ## Histórico
 
@@ -20,4 +20,4 @@ Versão | Status | Data
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](https://github.com/isaiasnas/api-core5-jwt/blob/master/LICENSE) file for details
+This project is licensed under the MIT License - see the [LICENSE](https://github.com/isaiasnas/api-core5-jwt/blob/main/LICENSE) file for details
