@@ -1,0 +1,45 @@
+#See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
+FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS base
+
+ARG FEED_URL
+ARG PAT
+
+# download and install latest credential provider. Not required after https://github.com/dotnet/dotnet-docker/issues/878
+RUN wget -qO- https://aka.ms/install-artifacts-credprovider.sh | bash
+
+WORKDIR /app
+EXPOSE 80
+
+# Optional: Sometimes the http client hangs because of a .NET issue. Setting this in dockerfile helps 
+ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
+
+# Environment variable to enable seesion token cache. More on this here: https://github.com/Microsoft/artifacts-credprovider#help
+ENV NUGET_CREDENTIALPROVIDER_SESSIONTOKENCACHE_ENABLED true
+
+# Environment variable for adding endpoint credentials. More on this here: https://github.com/Microsoft/artifacts-credprovider#help
+# Add "FEED_URL" AND "PAT" using --build-arg in docker build step. "endpointCredentials" field is an array, you can add multiple endpoint configurations.
+# Make sure that you *do not* hard code the "PAT" here. That is a sensitive information and must not be checked in.
+ENV VSS_NUGET_EXTERNAL_FEED_ENDPOINTS {\"endpointCredentials\": [{\"endpoint\":\"${FEED_URL}\", \"username\":\"ArtifactsDocker\", \"password\":\"${PAT}\"}]}
+
+FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
+WORKDIR /src
+COPY ["NuGet.Config", "."]
+COPY ["EasyInfo.Revolution.App.Api/EasyInfo.Revolution.App.Api.csproj", "EasyInfo.Revolution.App.Api/"]
+COPY ["EasyInfo.Revolution.App.Core/EasyInfo.Revolution.App.Core.csproj", "EasyInfo.Revolution.App.Core/"]
+
+RUN dotnet restore "EasyInfo.Revolution.App.Api/EasyInfo.Revolution.App.Api.csproj"
+#RUN dotnet restore --configfile "NuGet.Config" "EasyInfo.Revolution.App.Api/EasyInfo.Revolution.App.Api.csproj"
+
+COPY . .
+WORKDIR "/src/EasyInfo.Revolution.App.Api"
+RUN dotnet build "EasyInfo.Revolution.App.Api.csproj" -c Release -o /app/build
+
+FROM build AS publish
+RUN dotnet publish "EasyInfo.Revolution.App.Api.csproj" -c Release -o /app/publish
+
+FROM base AS final
+WORKDIR /app
+COPY --from=publish /app/publish .
+ENTRYPOINT ["dotnet", "EasyInfo.Revolution.App.Api.dll"]
+
+#docker build --build-arg FEED_URL=feed --build-arg PAT=123 .
